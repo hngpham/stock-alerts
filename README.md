@@ -52,3 +52,51 @@ This makes it possible to run continuous stock tracking without API constraints 
 
 **Maximize flexibility while minimizing cost.**  
 Track your tickers, write unlimited notes, and get timely alerts **without hitting API limits or paying for premium feeds.**
+
+---
+
+## Quick start (Docker)
+
+### 1. Download this project
+```bash
+git clone https://github.com/hngpham/stock-alerts.git
+cd stock-alerts
+
+## 2. Get an API key
+
+You must configure **at least one quote provider**:
+
+- **Alpha Vantage** – free 25 requests/day  
+- **ChatGPT (OpenAI)** – supply your API key (optional alternative)  
+- **Gemini (Google AI Studio)** – supply your key (optional alternative)  
+
+Even though Alpha Vantage is the default, you can switch to ChatGPT or Gemini to avoid daily limits.
+
+---
+
+## 3. Configure `docker-compose.yml`
+
+Open `docker-compose.yml` in a text editor and update:
+
+- `ports:` → change to your preferred port if `8000` is taken  
+- Add your API key(s) under `environment:`  
+
+**Example:**
+```yaml
+  environment:
+    ALPHA_VANTAGE_KEY: "your-alpha-key"
+    OPENAI_API_KEY: "your-chatgpt-key"
+    GEMINI_API_KEY: "your-gemini-key"
+    QUOTE_PROVIDER: "alpha_vantage"   # or "chatgpt" / "gemini"
+    DB_PATH: "/data/stocks.db"
+    MARKET_TZ: "America/New_York"
+```
+
+## 4. Build and run
+
+For the **first time** (or after editing `docker-compose.yml`):
+
+```bash
+docker compose build
+docker compose up -d
+```
