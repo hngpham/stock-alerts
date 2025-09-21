@@ -1,0 +1,36 @@
+name: Bug report
+description: Report a bug to help us improve
+labels: [bug]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Clear, concise description of the bug.
+      placeholder: When I click Update All, I see…
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps to reproduce the issue.
+      placeholder: |
+        1. …
+        2. …
+        3. …
+  - type: input
+    id: version
+    attributes:
+      label: Version / commit
+      placeholder: e.g. v1.0.0 or commit SHA
+  - type: dropdown
+    id: env
+    attributes:
+      label: How are you running it?
+      options: [Docker, Source (uvicorn), Other]
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs / screenshots
+      render: shell
