@@ -1,6 +1,8 @@
 # quote_sources/gemini_search_provider.py
 from __future__ import annotations
-import os, json, logging
+import os
+import json
+import logging
 from typing import Optional, Tuple, Dict
 
 log = logging.getLogger("stock-alert")

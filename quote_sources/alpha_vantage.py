@@ -1,6 +1,5 @@
 # quote_sources/alpha_vantage.py
 from __future__ import annotations
-import os
 import re
 import requests
 from typing import Optional, Tuple, Dict
