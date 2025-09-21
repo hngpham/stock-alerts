@@ -1,7 +1,6 @@
 # quote_sources/__init__.py
 from __future__ import annotations
 import os
-from typing import Optional
 
 # Default provider if not set
 os.environ.setdefault("QUOTE_PROVIDER", "alpha_vantage")
