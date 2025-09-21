@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+apscheduler
+requests
+openai
+google-genai

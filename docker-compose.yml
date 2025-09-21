@@ -1,0 +1,38 @@
+services:
+  stock-alert:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "YOURPORT:8000"
+    environment:
+      DB_PATH: "/data/stocks.db"   
+      MARKET_TZ: "America/Chicago"
+      DISCORD_WEBHOOK: "https://discord.com/api/webhooks/..."
+
+      # === Alerts / Scheduler ===
+      ALERT_COOLDOWN_MINUTES: 15                # minutes between repeated alerts
+      ALERT_FIRE_TIMES: "09:35,13:30,14:45"     # times (HH:MM) in MARKET_TZ
+      EARNINGS_NOTIFY_DEFAULT_DAYS: 1           # default days before earnings
+
+      # === Quote Provider: Alpha Vantage (default) ===
+      # QUOTE_PROVIDER: "alpha_vantage"
+      # ALPHA_VANTAGE_KEY: "YOURKEY"
+
+      # === Quote Provider: ChatGPT/OpenAI ===
+      # QUOTE_PROVIDER: "chatgpt"
+      # OPENAI_MODEL: "gpt-4o-search-preview"
+      # OPENAI_API_KEY: "YOURKEY"
+
+      # === Quote Provider: Google Gemini ===
+      # QUOTE_PROVIDER: "gemini"
+      # GEMINI_MODEL: "gemini-2.5-flash-lite"
+      # GEMINI_API_KEY: "YOURKEY"
+    restart: always
+    volumes:
+      - ./data:/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"   # rotate when ~10 MB
+        max-file: "3"     

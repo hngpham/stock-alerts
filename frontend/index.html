@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Sticker Alert</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div id="sidebar">
+    <!-- Tabs -->
+    <div class="tabs">
+      <button id="tabWatch" class="tab-btn active">Watchlist</button>
+      <button id="tabArchived" class="tab-btn">Archived</button>
+    </div>
+
+    <!-- Shared rating filter -->
+    <div class="filterbar">
+      <label for="ratingFilter">Rating:</label>
+      <select id="ratingFilter">
+        <option value="0">All</option>
+        <option value="1">1 +</option>
+        <option value="2">2 +</option>
+        <option value="3">3 +</option>
+        <option value="4">4 +</option>
+        <option value="5">5</option>
+      </select>
+    </div>
+
+    <!-- WATCH TAB -->
+    <div id="paneWatch" class="tab-pane active">
+      <div class="row">
+        <input id="newTicker" placeholder="Add or find (e.g., AAPL)"/>
+        <button id="addBtn">Add</button>
+      </div>
+      <div class="muted small" id="dupHint"></div>
+      <ul id="symbolsWatch"></ul>
+    </div>
+
+    <!-- ARCHIVED TAB -->
+    <div id="paneArchived" class="tab-pane">
+      <ul id="symbolsArchived" class="muted"></ul>
+    </div>
+  </div>
+
+  <div id="main">
+    <div class="titlebar">
+      <h2 id="symbolTitle">Select a Symbol</h2>
+      <div class="titlebar-actions">
+        <span id="symbolEarningsExact" class="earnings-chip"></span>
+        <span id="updateOneStatus" class="muted small"></span>
+        <span id="globalRunStatus" class="muted small" title="Bulk update status">Idle</span>
+
+        <div id="linkbar" class="linkbar" title="Open links for the selected symbol">
+          <a id="lk_all"   href="#" rel="noopener noreferrer">all</a>
+          <a id="lk_hood"  href="#" target="_blank" rel="noopener noreferrer">hood</a>
+          <a id="lk_yahoo" href="#" target="_blank" rel="noopener noreferrer">yahoo</a>
+          <a id="lk_sa"    href="#" target="_blank" rel="noopener noreferrer">sa</a>
+          <a id="lk_ins"   href="#" target="_blank" rel="noopener noreferrer">insider</a>
+        </div>
+
+        <button id="updateBtn" class="secondary" style="display:none" title="Update this symbol">Update</button>
+        <button id="updateAllBtn" class="secondary" title="Update all (watchlist)">Update All</button>
+
+        <button id="archiveBtn" class="secondary" style="display:none" title="Move to archive">Archive</button>
+        <button id="deleteBtn" class="danger" style="display:none" title="Delete this symbol">Delete</button>
+      </div>
+    </div>
+
+    <div id="content">
+      <div id="notesPanel" class="panel">
+        <div class="notes-header">
+          <div class="notes-left">
+            <h4>Notes</h4>
+            <div id="ratingStars" class="stars" title="Click to rate">
+              <span data-star="1">☆</span>
+              <span data-star="2">☆</span>
+              <span data-star="3">☆</span>
+              <span data-star="4">☆</span>
+              <span data-star="5">☆</span>
+            </div>
+          </div>
+          <div class="notes-right">
+            <span id="noteSaveStatus" class="muted small"></span>
+            <span id="lastEditStatus" class="muted small" title="Updated when notes or alerts are saved"></span>
+          </div>
+        </div>
+        <div id="q_desc" class="muted small desc-blurb"></div>
+        <textarea id="note" placeholder="Write notes..."></textarea>
+      </div>
+
+      <div id="rightColumn">
+        <div id="quotePanel" class="panel">
+          <div class="panel-header">
+            <h4>Quote</h4>
+            <div class="muted small" id="lastCheck"></div>
+          </div>
+
+          <div id="quoteGrid" class="grid">
+            <div class="kv"><span>Price</span><strong id="q_price">—</strong></div>
+            <div class="kv"><span>P/E ratio</span><strong id="q_pe">—</strong></div>
+
+            <div class="kv"><span>Change</span><strong id="q_change">—</strong></div>
+            <div class="kv"><span>%</span><strong id="q_change_pct">—</strong></div>
+
+            <div class="kv"><span>Open</span><strong id="q_open">—</strong></div>
+            <div class="kv"><span>Prev Close</span><strong id="q_prev">—</strong></div>
+
+            <div class="kv"><span>Low</span><strong id="q_low">—</strong></div>
+            <div class="kv"><span>High</span><strong id="q_high">—</strong></div>
+
+            <div class="kv"><span>52-wk low</span><strong id="q_52l">—</strong></div>
+            <div class="kv"><span>52-wk high</span><strong id="q_52h">—</strong></div>
+
+            <div class="kv"><span>Mkt cap</span><strong id="q_mktcap">—</strong></div>
+            <div class="kv"><span>Volume</span><strong id="q_vol">—</strong></div>
+
+            <div class="kv"><span>Div yield</span><strong id="q_div_yield">—</strong></div>
+            <div class="kv"><span>Qtrly Div Amt</span><strong id="q_qdiv">—</strong></div>
+          </div>
+        </div>
+
+        <div id="alertsPanel" class="panel">
+          <div class="panel-header">
+            <h4>Alert settings</h4>
+            <span id="saveStatus" class="muted small"></span>
+          </div>
+
+          <div class="row">
+            <label class="lbl">Price above</label>
+            <input id="a_above" type="number" step="0.01" placeholder="e.g., 150.00">
+          </div>
+          <div class="row">
+            <label class="lbl">Price below</label>
+            <input id="a_below" type="number" step="0.01" placeholder="e.g., 120.00">
+          </div>
+
+          <div class="grid2">
+            <div>
+              <div class="lbl">Percent drop</div>
+              <label><input type="checkbox" class="drop" value="10"> 10%</label>
+              <label><input type="checkbox" class="drop" value="15"> 15%</label>
+              <label><input type="checkbox" class="drop" value="20"> 20%</label>
+              <label><input type="checkbox" class="drop" value="25"> 25%</label>
+            </div>
+            <div>
+              <div class="lbl">Percent jump</div>
+              <label><input type="checkbox" class="jump" value="10"> 10%</label>
+              <label><input type="checkbox" class="jump" value="15"> 15%</label>
+              <label><input type="checkbox" class="jump" value="20"> 20%</label>
+              <label><input type="checkbox" class="jump" value="25"> 25%</label>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
