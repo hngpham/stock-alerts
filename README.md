@@ -2,6 +2,18 @@
 
 A **cheap, customizable, self-hosted stock alert system** built with **FastAPI + SQLite + vanilla JS frontend**.  
 Instead of paying for expensive real-time feeds, this project experiments with using **ChatGPT** and **Gemini search engines** as alternative quote providers.
+---
+
+## Screenshots
+
+![screenshot](docs/screenshot.png)
+
+---
+
+## Goal
+
+**Maximize flexibility while minimizing cost.**  
+Track your tickers, write unlimited notes, and get timely alerts **without hitting API limits or paying for premium feeds.**
 
 ---
 
@@ -33,34 +45,13 @@ This makes it possible to run continuous stock tracking without API constraints 
 
 ---
 
-## Architecture
-
-- **Backend:** FastAPI, SQLite, APScheduler (`backend/`)  
-- **Frontend:** static HTML/CSS/JS served by FastAPI (`frontend/`)  
-- **Providers:** pluggable quote sources (`quote_sources/`)  
-- **Storage:** SQLite database (`data/stocks.db`)  
-
----
-
-## Screenshots
-
-![screenshot](docs/screenshot.png)
-
----
-
-## Goal
-
-**Maximize flexibility while minimizing cost.**  
-Track your tickers, write unlimited notes, and get timely alerts **without hitting API limits or paying for premium feeds.**
-
----
-
 ## Quick start (Docker)
 
 ### 1. Download this project
 ```bash
 git clone https://github.com/hngpham/stock-alerts.git
 cd stock-alerts
+```
 
 ## 2. Get an API key
 
@@ -100,3 +91,12 @@ For the **first time** (or after editing `docker-compose.yml`):
 docker compose build
 docker compose up -d
 ```
+
+---
+
+## Architecture
+
+- **Backend:** FastAPI, SQLite, APScheduler (`backend/`)  
+- **Frontend:** static HTML/CSS/JS served by FastAPI (`frontend/`)  
+- **Providers:** pluggable quote sources (`quote_sources/`)  
+- **Storage:** SQLite database (`data/stocks.db`)  
