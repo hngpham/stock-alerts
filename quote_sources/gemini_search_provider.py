@@ -13,6 +13,7 @@ except Exception:
     genai = None  # type: ignore
     types = None  # type: ignore
 
+
 # ---- helpers to coerce types (kept local to avoid importing your other module) ----
 def _f(x):
     try:
@@ -20,21 +21,30 @@ def _f(x):
     except Exception:
         return None
 
+
 def _i(x):
     try:
         return None if x in (None, "", "null") else int(float(x))
     except Exception:
         return None
 
+
 def _normalize_err(e: Optional[str]) -> Optional[str]:
-    if not e: return None
+    if not e:
+        return None
     e = str(e).lower()
-    if "rate" in e and "limit" in e: return "rate_limited"
-    if "api key" in e or "unauth" in e or "key_missing" in e: return "key_missing"
-    if "invalid_symbol" in e: return "invalid_symbol"
-    if "parse" in e: return "parse_error"
-    if "empty" in e or "not found" in e: return "empty_quote"
+    if "rate" in e and "limit" in e:
+        return "rate_limited"
+    if "api key" in e or "unauth" in e or "key_missing" in e:
+        return "key_missing"
+    if "invalid_symbol" in e:
+        return "invalid_symbol"
+    if "parse" in e:
+        return "parse_error"
+    if "empty" in e or "not found" in e:
+        return "empty_quote"
     return e
+
 
 def _strip_fences(s: str) -> str:
     """Remove common markdown fences like ```json ... ``` and leading/trailing whitespace."""
@@ -44,6 +54,7 @@ def _strip_fences(s: str) -> str:
         if t.lower().startswith("json\n"):
             t = t[5:]
     return t.strip()
+
 
 def _first_json_object(s: str) -> Optional[str]:
     """Return the first complete JSON object {...} from s (handles nested braces & strings)."""
@@ -71,9 +82,10 @@ def _first_json_object(s: str) -> Optional[str]:
             elif ch == "}":
                 depth -= 1
                 if depth == 0:
-                    return s[start:i + 1]
+                    return s[start : i + 1]
         i += 1
     return None
+
 
 class GeminiSearchQuoteProvider:
     """
@@ -86,6 +98,7 @@ class GeminiSearchQuoteProvider:
 
     Returns a dict matching the unified schema in base.py.
     """
+
     name = "gemini_search"
 
     def __init__(self, timeout: int | None = None):
@@ -103,7 +116,9 @@ class GeminiSearchQuoteProvider:
     def is_ready(self) -> bool:
         return self._client is not None and bool(os.getenv("GEMINI_API_KEY"))
 
-    def get_price_prev_close(self, symbol: str) -> Tuple[Optional[float], Optional[float], Optional[str]]:
+    def get_price_prev_close(
+        self, symbol: str
+    ) -> Tuple[Optional[float], Optional[float], Optional[str]]:
         d = self._ask(symbol)
         if d is None:
             return None, None, "network_error"
@@ -121,8 +136,11 @@ class GeminiSearchQuoteProvider:
         s = symbol.upper().strip()
         core = {
             "symbol": s,
-            "open": None, "high": None, "low": None,
-            "price": None, "volume": None,
+            "open": None,
+            "high": None,
+            "low": None,
+            "price": None,
+            "volume": None,
             "latest_trading_day": None,
             "prev_close": None,
             "change": None,
@@ -133,7 +151,7 @@ class GeminiSearchQuoteProvider:
             "fifty_two_week_high": None,
             "fifty_two_week_low": None,
             "quarterly_dividend_amount": None,
-            "next_earning_day": None,        # <-- NEW FIELD
+            "next_earning_day": None,  # <-- NEW FIELD
             "description": None,
             "source": self.name,
             "error": None,
@@ -145,36 +163,56 @@ class GeminiSearchQuoteProvider:
             return core
 
         try:
-            core.update({
-                "symbol": d.get("symbol") or s,
-                "open": _f(d.get("open")),
-                "high": _f(d.get("high")),
-                "low": _f(d.get("low")),
-                "price": _f(d.get("price")),
-                "volume": _i(d.get("volume")),
-                "latest_trading_day": d.get("latest_trading_day"),
-                "prev_close": _f(d.get("prev_close")),
-                "change": _f(d.get("change")),
-                "change_percent": d.get("change_percent"),
-                "market_cap": _i(d.get("market_cap")),
-                "pe_ratio": _f(d.get("pe_ratio")),
-                "dividend_yield_percent": _f(d.get("dividend_yield_percent")),
-                "fifty_two_week_high": _f(d.get("fifty_two_week_high")),
-                "fifty_two_week_low": _f(d.get("fifty_two_week_low")),
-                "quarterly_dividend_amount": _f(d.get("quarterly_dividend_amount")),
-                "next_earning_day": d.get("next_earning_day"),  # pass through as string like "YYYY-MM-DD"
-                "description": d.get("description") if isinstance(d.get("description"), str) else None,
-                "source": self.name,
-                "error": _normalize_err(d.get("error")),
-            })
+            core.update(
+                {
+                    "symbol": d.get("symbol") or s,
+                    "open": _f(d.get("open")),
+                    "high": _f(d.get("high")),
+                    "low": _f(d.get("low")),
+                    "price": _f(d.get("price")),
+                    "volume": _i(d.get("volume")),
+                    "latest_trading_day": d.get("latest_trading_day"),
+                    "prev_close": _f(d.get("prev_close")),
+                    "change": _f(d.get("change")),
+                    "change_percent": d.get("change_percent"),
+                    "market_cap": _i(d.get("market_cap")),
+                    "pe_ratio": _f(d.get("pe_ratio")),
+                    "dividend_yield_percent": _f(d.get("dividend_yield_percent")),
+                    "fifty_two_week_high": _f(d.get("fifty_two_week_high")),
+                    "fifty_two_week_low": _f(d.get("fifty_two_week_low")),
+                    "quarterly_dividend_amount": _f(d.get("quarterly_dividend_amount")),
+                    "next_earning_day": d.get(
+                        "next_earning_day"
+                    ),  # pass through as string like "YYYY-MM-DD"
+                    "description": (
+                        d.get("description")
+                        if isinstance(d.get("description"), str)
+                        else None
+                    ),
+                    "source": self.name,
+                    "error": _normalize_err(d.get("error")),
+                }
+            )
 
-            if core["change"] is None and core["price"] is not None and core["prev_close"] is not None:
+            if (
+                core["change"] is None
+                and core["price"] is not None
+                and core["prev_close"] is not None
+            ):
                 core["change"] = core["price"] - core["prev_close"]
-            if core["change_percent"] is None and core["change"] is not None and core["prev_close"] not in (None, 0):
+            if (
+                core["change_percent"] is None
+                and core["change"] is not None
+                and core["prev_close"] not in (None, 0)
+            ):
                 pct = (core["change"] / core["prev_close"]) * 100.0
                 core["change_percent"] = f"{pct:.2f}%"
 
-            if core["price"] is None and core["prev_close"] is None and core["error"] is None:
+            if (
+                core["price"] is None
+                and core["prev_close"] is None
+                and core["error"] is None
+            ):
                 core["error"] = "empty_quote"
         except Exception:
             core["error"] = "parse_error"
@@ -204,19 +242,19 @@ class GeminiSearchQuoteProvider:
                 "volume": None,
                 "latest_trading_day": None,  # "YYYY-MM-DD"
                 "change": None,
-                "change_percent": None,      # "12.34%"
+                "change_percent": None,  # "12.34%"
                 "market_cap": None,
                 "pe_ratio": None,
                 "dividend_yield_percent": None,
                 "fifty_two_week_high": None,
                 "fifty_two_week_low": None,
                 "quarterly_dividend_amount": None,
-                "next_earning_day": None,    # <-- NEW FIELD, "YYYY-MM-DD" if known/upcoming
+                "next_earning_day": None,  # <-- NEW FIELD, "YYYY-MM-DD" if known/upcoming
                 "description": None,
                 "source": self.name,
-                "error": None
+                "error": None,
             }
-            
+
             config = types.GenerateContentConfig(
                 tools=[grounding_tool],
                 temperature=0,
@@ -267,9 +305,9 @@ class GeminiSearchQuoteProvider:
                         "next_earning_day": "2025-10-30",
                         "description": "Apple designs consumer electronics and services; shares trade near record highs with steady demand for iPhone and Services revenue growth.",
                         "source": "google_search_tool",
-                        "error": None
+                        "error": None,
                     }
-                ]
+                ],
             }
 
             resp = self._client.models.generate_content(  # type: ignore[union-attr]
@@ -300,4 +338,9 @@ class GeminiSearchQuoteProvider:
                 pass
             log.warning(f"Gemini request failed for {s}: {e} :: preview={preview!r}")
             # Return a structured error so the loop continues and UI counters update
-            return {"symbol": s, "source": self.name, "next_earning_day": None, "error": "parse_error"}
+            return {
+                "symbol": s,
+                "source": self.name,
+                "next_earning_day": None,
+                "error": "parse_error",
+            }

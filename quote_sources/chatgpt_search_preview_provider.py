@@ -34,6 +34,7 @@ class ChatGPTSearchPreviewQuoteProvider:
       - Includes a short "description" (one sentence: industry + business focus).
       - NEW: Supports `next_earning_day` to match base.py schema.
     """
+
     name = "chatgpt_search_preview"
 
     def __init__(self, timeout: int = 20):
@@ -53,7 +54,9 @@ class ChatGPTSearchPreviewQuoteProvider:
         # Match alpha_vantage style: return True only when configured.
         return (self._client is not None) and bool(os.getenv("OPENAI_API_KEY"))
 
-    def get_price_prev_close(self, symbol: str) -> Tuple[Optional[float], Optional[float], Optional[str]]:
+    def get_price_prev_close(
+        self, symbol: str
+    ) -> Tuple[Optional[float], Optional[float], Optional[str]]:
         d = self._ask(symbol)
         if d is None:
             return None, None, "network_error"
@@ -71,8 +74,11 @@ class ChatGPTSearchPreviewQuoteProvider:
         s = symbol.upper().strip()
         core = {
             "symbol": s,
-            "open": None, "high": None, "low": None,
-            "price": None, "volume": None,
+            "open": None,
+            "high": None,
+            "low": None,
+            "price": None,
+            "volume": None,
             "latest_trading_day": None,
             "prev_close": None,
             "change": None,
@@ -83,7 +89,7 @@ class ChatGPTSearchPreviewQuoteProvider:
             "fifty_two_week_high": None,
             "fifty_two_week_low": None,
             "quarterly_dividend_amount": None,
-            "next_earning_day": None,             # NEW (compat with base.py & Gemini)
+            "next_earning_day": None,  # NEW (compat with base.py & Gemini)
             "description": None,
             "source": self.name,
             "error": None,
@@ -96,38 +102,60 @@ class ChatGPTSearchPreviewQuoteProvider:
 
         try:
             # Fill in whatever the model provided (best-effort)
-            core.update({
-                "symbol": (d.get("symbol") or s),
-                "open": _coerce_float(d.get("open")),
-                "high": _coerce_float(d.get("high")),
-                "low": _coerce_float(d.get("low")),
-                "price": _coerce_float(d.get("price")),
-                "volume": _coerce_int(d.get("volume")),
-                "latest_trading_day": d.get("latest_trading_day"),
-                "prev_close": _coerce_float(d.get("prev_close")),
-                "change": _coerce_float(d.get("change")),
-                "change_percent": d.get("change_percent"),
-                "market_cap": _coerce_int(d.get("market_cap")),
-                "pe_ratio": _coerce_float(d.get("pe_ratio")),
-                "dividend_yield_percent": _coerce_float(d.get("dividend_yield_percent")),
-                "fifty_two_week_high": _coerce_float(d.get("fifty_two_week_high")),
-                "fifty_two_week_low": _coerce_float(d.get("fifty_two_week_low")),
-                "quarterly_dividend_amount": _coerce_float(d.get("quarterly_dividend_amount")),
-                "next_earning_day": d.get("next_earning_day"),   # NEW
-                "description": (d.get("description") if isinstance(d.get("description"), str) else None),
-                "source": self.name,
-                "error": _normalize_error_code(d.get("error")),
-            })
+            core.update(
+                {
+                    "symbol": (d.get("symbol") or s),
+                    "open": _coerce_float(d.get("open")),
+                    "high": _coerce_float(d.get("high")),
+                    "low": _coerce_float(d.get("low")),
+                    "price": _coerce_float(d.get("price")),
+                    "volume": _coerce_int(d.get("volume")),
+                    "latest_trading_day": d.get("latest_trading_day"),
+                    "prev_close": _coerce_float(d.get("prev_close")),
+                    "change": _coerce_float(d.get("change")),
+                    "change_percent": d.get("change_percent"),
+                    "market_cap": _coerce_int(d.get("market_cap")),
+                    "pe_ratio": _coerce_float(d.get("pe_ratio")),
+                    "dividend_yield_percent": _coerce_float(
+                        d.get("dividend_yield_percent")
+                    ),
+                    "fifty_two_week_high": _coerce_float(d.get("fifty_two_week_high")),
+                    "fifty_two_week_low": _coerce_float(d.get("fifty_two_week_low")),
+                    "quarterly_dividend_amount": _coerce_float(
+                        d.get("quarterly_dividend_amount")
+                    ),
+                    "next_earning_day": d.get("next_earning_day"),  # NEW
+                    "description": (
+                        d.get("description")
+                        if isinstance(d.get("description"), str)
+                        else None
+                    ),
+                    "source": self.name,
+                    "error": _normalize_error_code(d.get("error")),
+                }
+            )
 
             # If the model omitted derived fields but gave price/prev_close, compute them.
-            if core["change"] is None and core["price"] is not None and core["prev_close"] is not None:
+            if (
+                core["change"] is None
+                and core["price"] is not None
+                and core["prev_close"] is not None
+            ):
                 core["change"] = core["price"] - core["prev_close"]
-            if core["change_percent"] is None and core["change"] is not None and core["prev_close"] not in (None, 0):
+            if (
+                core["change_percent"] is None
+                and core["change"] is not None
+                and core["prev_close"] not in (None, 0)
+            ):
                 pct = (core["change"] / core["prev_close"]) * 100.0
                 core["change_percent"] = f"{pct:.2f}%"
 
             # If *everything* critical is missing and no explicit error was set, align with alpha provider
-            if core["price"] is None and core["prev_close"] is None and core["error"] is None:
+            if (
+                core["price"] is None
+                and core["prev_close"] is None
+                and core["error"] is None
+            ):
                 core["error"] = "empty_quote"
         except Exception:
             core["error"] = "parse_error"
@@ -144,7 +172,12 @@ class ChatGPTSearchPreviewQuoteProvider:
 
         if not self.is_ready():
             # Mirror other providers
-            return {"symbol": s, "source": self.name, "next_earning_day": None, "error": "key_missing"}
+            return {
+                "symbol": s,
+                "source": self.name,
+                "next_earning_day": None,
+                "error": "key_missing",
+            }
 
         content: Optional[str] = None
         try:
@@ -193,7 +226,12 @@ class ChatGPTSearchPreviewQuoteProvider:
 
             content = completion.choices[0].message.content if completion.choices else None  # type: ignore[index]
             if not content:
-                return {"symbol": s, "source": self.name, "next_earning_day": None, "error": "network_error"}
+                return {
+                    "symbol": s,
+                    "source": self.name,
+                    "next_earning_day": None,
+                    "error": "network_error",
+                }
 
             # Some models return fenced code blocks or extra prose. Strip & extract first JSON object.
             cleaned = _strip_md_fences(content)
@@ -208,22 +246,33 @@ class ChatGPTSearchPreviewQuoteProvider:
                     data["next_earning_day"] = None
                 return data
 
-            return {"symbol": s, "source": self.name, "next_earning_day": None, "error": "parse_error"}
+            return {
+                "symbol": s,
+                "source": self.name,
+                "next_earning_day": None,
+                "error": "parse_error",
+            }
 
         except Exception as e:
             preview = ""
             try:
                 if content:
-                    preview = (content[:300] + "…")
+                    preview = content[:300] + "…"
             except Exception:
                 pass
             log.warning(f"OpenAI request failed for {s}: {e} :: preview={preview!r}")
             # Return structured error so the app can continue gracefully
-            return {"symbol": s, "source": self.name, "next_earning_day": None, "error": "parse_error"}
+            return {
+                "symbol": s,
+                "source": self.name,
+                "next_earning_day": None,
+                "error": "parse_error",
+            }
 
 
 # -------- small parsing helpers --------
 _num_re = re.compile(r"^\s*-?\d+(?:\.\d+)?\s*$")
+
 
 def _coerce_float(v):
     if v is None:
@@ -244,9 +293,11 @@ def _coerce_float(v):
                 return None
     return None
 
+
 def _coerce_int(v):
     f = _coerce_float(v)
     return int(f) if f is not None else None
+
 
 def _strip_md_fences(text: str) -> str:
     """
@@ -274,6 +325,7 @@ def _strip_md_fences(text: str) -> str:
 
     return t.strip()
 
+
 def _first_json_object(s: str) -> Optional[str]:
     """Return the first complete JSON object {...} from s (handles nested braces & strings)."""
     start = s.find("{")
@@ -300,9 +352,10 @@ def _first_json_object(s: str) -> Optional[str]:
             elif ch == "}":
                 depth -= 1
                 if depth == 0:
-                    return s[start:i + 1]
+                    return s[start : i + 1]
         i += 1
     return None
+
 
 def _normalize_error_code(err) -> Optional[str]:
     if not err:

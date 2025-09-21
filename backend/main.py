@@ -35,12 +35,18 @@ Path(os.path.dirname(DB_PATH)).mkdir(parents=True, exist_ok=True)
 DISCORD_WEBHOOK = os.getenv("DISCORD_WEBHOOK", "").strip()
 MARKET_TZ = os.getenv("MARKET_TZ", "America/New_York")
 COOLDOWN_MINUTES = int(os.getenv("ALERT_COOLDOWN_MINUTES", "15"))
-EARNINGS_NOTIFY_DEFAULT_DAYS = int(os.getenv("EARNINGS_NOTIFY_DEFAULT_DAYS", "1"))  # default alert seed
+EARNINGS_NOTIFY_DEFAULT_DAYS = int(
+    os.getenv("EARNINGS_NOTIFY_DEFAULT_DAYS", "1")
+)  # default alert seed
 ALERT_FIRE_TIMES = [
-    t.strip() for t in os.getenv("ALERT_FIRE_TIMES", "09:35,12:00,15:55").split(",") if t.strip()
+    t.strip()
+    for t in os.getenv("ALERT_FIRE_TIMES", "09:35,12:00,15:55").split(",")
+    if t.strip()
 ]
 QUOTE_PROVIDER_NAME = (os.getenv("QUOTE_PROVIDER") or "alpha_vantage").lower().strip()
-RUN_TIMEOUT_SECONDS = int(os.getenv("RUN_TIMEOUT_SECONDS", "600"))  # auto-recover stuck "running"
+RUN_TIMEOUT_SECONDS = int(
+    os.getenv("RUN_TIMEOUT_SECONDS", "600")
+)  # auto-recover stuck "running"
 
 # Provider pacing knobs (kept for future use if needed by provider impls)
 PROVIDER_MIN_INTERVAL_MS = int(os.getenv("PROVIDER_MIN_INTERVAL_MS", "20000"))
@@ -84,6 +90,7 @@ REQUIRED_SYMBOL_STATE_COLS: Dict[str, str] = {
 # Utilities
 # =========================
 
+
 def now_et() -> datetime:
     return datetime.now(ZoneInfo(MARKET_TZ))
 
@@ -107,10 +114,10 @@ def _fmt_pct(val: Optional[float]) -> str:
     return "—" if val is None else f"{val:.2f}%"
 
 
-
 # =========================
 # DB Helpers / Migrations
 # =========================
+
 
 def get_conn() -> sqlite3.Connection:
     # Row factory gives dict-like access when needed
@@ -123,12 +130,15 @@ def init_db() -> None:
         c = conn.cursor()
 
         # Core tables
-        c.execute("""
+        c.execute(
+            """
         CREATE TABLE IF NOT EXISTS groups (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           name TEXT NOT NULL UNIQUE
-        )""")
-        c.execute("""
+        )"""
+        )
+        c.execute(
+            """
         CREATE TABLE IF NOT EXISTS symbols (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           ticker TEXT NOT NULL,
@@ -137,21 +147,27 @@ def init_db() -> None:
           rating INTEGER NOT NULL DEFAULT 0,
           last_edit_epoch INTEGER,
           FOREIGN KEY(group_id) REFERENCES groups(id)
-        )""")
-        c.execute("""
+        )"""
+        )
+        c.execute(
+            """
         CREATE TABLE IF NOT EXISTS alerts (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           symbol_id INTEGER NOT NULL,
           type TEXT NOT NULL,
           value REAL NOT NULL,
           FOREIGN KEY(symbol_id) REFERENCES symbols(id)
-        )""")
-        c.execute("""
+        )"""
+        )
+        c.execute(
+            """
         CREATE TABLE IF NOT EXISTS alert_state (
           alert_id INTEGER PRIMARY KEY,
           last_sent_epoch INTEGER
-        )""")
-        c.execute("""
+        )"""
+        )
+        c.execute(
+            """
         CREATE TABLE IF NOT EXISTS symbol_state (
           symbol_id INTEGER PRIMARY KEY,
           last_check_epoch INTEGER,
@@ -159,8 +175,10 @@ def init_db() -> None:
           note TEXT,
           last_price REAL,
           last_prev_close REAL
-        )""")
-        c.execute("""
+        )"""
+        )
+        c.execute(
+            """
         CREATE TABLE IF NOT EXISTS run_status (
           id INTEGER PRIMARY KEY CHECK (id = 1),
           phase TEXT,
@@ -170,16 +188,21 @@ def init_db() -> None:
           message TEXT,
           ok_count INTEGER,
           err_count INTEGER
-        )""")
+        )"""
+        )
 
         # Seed run_status
-        c.execute("INSERT OR IGNORE INTO run_status (id, phase, message, ok_count, err_count) VALUES (1,'idle','No runs yet',0,0)")
+        c.execute(
+            "INSERT OR IGNORE INTO run_status (id, phase, message, ok_count, err_count) VALUES (1,'idle','No runs yet',0,0)"
+        )
         # Seed groups
         c.execute("INSERT OR IGNORE INTO groups(name) VALUES ('watch')")
         c.execute("INSERT OR IGNORE INTO groups(name) VALUES ('archived')")
         conn.commit()
 
-    _ensure_symbols_columns(["rating INTEGER NOT NULL DEFAULT 0", "last_edit_epoch INTEGER"])
+    _ensure_symbols_columns(
+        ["rating INTEGER NOT NULL DEFAULT 0", "last_edit_epoch INTEGER"]
+    )
     _ensure_alert_state_last_key()
     ensure_symbol_state_columns()
 
@@ -245,6 +268,7 @@ ARCHIVE_ID = get_group_id("archived")
 # Run Status Helpers
 # =========================
 
+
 def set_run_status(
     phase: str,
     *,
@@ -256,12 +280,24 @@ def set_run_status(
     err_count: Optional[int] = None,
 ) -> None:
     sets, vals = ["phase=?"], [phase]
-    if started is not None:     sets.append("started_epoch=?");  vals.append(started)
-    if finished is not None:    sets.append("finished_epoch=?"); vals.append(finished)
-    if status_code is not None: sets.append("status_code=?");    vals.append(status_code)
-    if message is not None:     sets.append("message=?");        vals.append((message or "")[:400])
-    if ok_count is not None:    sets.append("ok_count=?");       vals.append(ok_count)
-    if err_count is not None:   sets.append("err_count=?");      vals.append(err_count)
+    if started is not None:
+        sets.append("started_epoch=?")
+        vals.append(started)
+    if finished is not None:
+        sets.append("finished_epoch=?")
+        vals.append(finished)
+    if status_code is not None:
+        sets.append("status_code=?")
+        vals.append(status_code)
+    if message is not None:
+        sets.append("message=?")
+        vals.append((message or "")[:400])
+    if ok_count is not None:
+        sets.append("ok_count=?")
+        vals.append(ok_count)
+    if err_count is not None:
+        sets.append("err_count=?")
+        vals.append(err_count)
     vals.append(1)
     with get_conn() as conn:
         c = conn.cursor()
@@ -272,8 +308,10 @@ def set_run_status(
 def get_run_status() -> Dict[str, Any]:
     with get_conn() as conn:
         c = conn.cursor()
-        c.execute("""SELECT phase, started_epoch, finished_epoch, status_code, message, ok_count, err_count
-                     FROM run_status WHERE id=1""")
+        c.execute(
+            """SELECT phase, started_epoch, finished_epoch, status_code, message, ok_count, err_count
+                     FROM run_status WHERE id=1"""
+        )
         row = c.fetchone()
     if not row:
         return {"phase": "idle", "message": "No runs", "timezone": MARKET_TZ}
@@ -290,7 +328,9 @@ def get_run_status() -> Dict[str, Any]:
 
 
 def _force_finish_run_status(status_code: str, message: str) -> None:
-    set_run_status("finished", finished=int(time.time()), status_code=status_code, message=message)
+    set_run_status(
+        "finished", finished=int(time.time()), status_code=status_code, message=message
+    )
 
 
 def _auto_recover_run_status() -> None:
@@ -315,7 +355,9 @@ def _auto_recover_run_status() -> None:
                     (int(time.time()),),
                 )
                 conn.commit()
-                log.warning(f"Auto-recovered stuck run (age={age}s >= {RUN_TIMEOUT_SECONDS}s)")
+                log.warning(
+                    f"Auto-recovered stuck run (age={age}s >= {RUN_TIMEOUT_SECONDS}s)"
+                )
 
 
 def _recover_stuck_run_status() -> None:
@@ -329,13 +371,16 @@ def _recover_stuck_run_status() -> None:
         phase, started_epoch = row[0], row[1]
         if phase == "running":
             now = int(time.time())
-            age = (now - (started_epoch or now))
-            c.execute("""UPDATE run_status
+            age = now - (started_epoch or now)
+            c.execute(
+                """UPDATE run_status
                          SET phase='finished',
                              finished_epoch=?,
                              status_code='interrupted',
                              message='Previous run did not finish (server restarted).'
-                       WHERE id=1""", (now,))
+                       WHERE id=1""",
+                (now,),
+            )
             conn.commit()
             log.info(f"Recovered 'running' on startup (age={age}s).")
 
@@ -352,7 +397,9 @@ PROVIDER = get_provider()
 log.info(f"Quote provider: {QUOTE_PROVIDER_NAME}")
 if not PROVIDER.is_ready():
     if QUOTE_PROVIDER_NAME == "alpha_vantage":
-        log.warning(f"ALPHA_VANTAGE_KEY is not set or provider not ready: {_mask_key(os.getenv('ALPHA_VANTAGE_KEY'))}")
+        log.warning(
+            f"ALPHA_VANTAGE_KEY is not set or provider not ready: {_mask_key(os.getenv('ALPHA_VANTAGE_KEY'))}"
+        )
     else:
         log.warning(f"Provider '{QUOTE_PROVIDER_NAME}' is not ready or unconfigured.")
 
@@ -377,6 +424,7 @@ def _notify_discord(content: str) -> bool:
 # Symbol-State Persistence
 # =========================
 
+
 def upsert_symbol_state(
     symbol_id: int,
     window_open: bool,
@@ -397,20 +445,35 @@ def upsert_symbol_state(
               last_price=excluded.last_price,
               last_prev_close=excluded.last_prev_close
             """,
-            (symbol_id, int(time.time()), 1 if window_open else 0, (note or "")[:300], last_price, last_prev_close),
+            (
+                symbol_id,
+                int(time.time()),
+                1 if window_open else 0,
+                (note or "")[:300],
+                last_price,
+                last_prev_close,
+            ),
         )
         conn.commit()
 
 
-def upsert_symbol_state_full(symbol_id: int, window_open: bool, note: str, data: Optional[Dict[str, Any]]) -> None:
+def upsert_symbol_state_full(
+    symbol_id: int, window_open: bool, note: str, data: Optional[Dict[str, Any]]
+) -> None:
     """Persist a wide row for cache-first UI; robust to missing fields (store NULLs)."""
+
     def v(key: str) -> Any:
         return None if not data else data.get(key)
 
     # Normalize earnings date into YYYY-MM-DD string
     next_day = None
     if data:
-        for k in ("next_earning_day", "next_earnings_day", "earnings_date", "nextEarningsDate"):
+        for k in (
+            "next_earning_day",
+            "next_earnings_day",
+            "earnings_date",
+            "nextEarningsDate",
+        ):
             val = data.get(k)
             if val:
                 next_day = val
@@ -490,8 +553,13 @@ def upsert_symbol_state_full(symbol_id: int, window_open: bool, note: str, data:
 # Alerts / Evaluation
 # =========================
 
+
 def _cooldown_ok(last_sent_epoch: Optional[int], now_epoch: int) -> bool:
-    return True if last_sent_epoch is None else (now_epoch - last_sent_epoch) >= COOLDOWN_MINUTES * 60
+    return (
+        True
+        if last_sent_epoch is None
+        else (now_epoch - last_sent_epoch) >= COOLDOWN_MINUTES * 60
+    )
 
 
 def _build_alert_msg(
@@ -522,7 +590,9 @@ def _days_until_earnings(next_earning_day: Optional[str], tz: str) -> Optional[i
 def get_last_sent_epoch(alert_id: int) -> Optional[int]:
     with get_conn() as conn:
         c = conn.cursor()
-        c.execute("SELECT last_sent_epoch FROM alert_state WHERE alert_id=?", (alert_id,))
+        c.execute(
+            "SELECT last_sent_epoch FROM alert_state WHERE alert_id=?", (alert_id,)
+        )
         row = c.fetchone()
     return row[0] if row and row[0] is not None else None
 
@@ -572,7 +642,9 @@ def get_last_sent_key(alert_id: int) -> Optional[str]:
     return row[0] if row and row[0] is not None else None
 
 
-def _evaluate_and_notify(symbol_id: int, ticker: str, quote: Dict[str, Any], now_epoch: int) -> int:
+def _evaluate_and_notify(
+    symbol_id: int, ticker: str, quote: Dict[str, Any], now_epoch: int
+) -> int:
     """Returns number of notifications sent for this symbol."""
     # Pull alert rules
     with get_conn() as conn:
@@ -590,7 +662,12 @@ def _evaluate_and_notify(symbol_id: int, ticker: str, quote: Dict[str, Any], now
 
     # Earnings date (normalized search across possible keys)
     next_earn = None
-    for k in ("next_earning_day", "next_earnings_day", "earnings_date", "nextEarningsDate"):
+    for k in (
+        "next_earning_day",
+        "next_earnings_day",
+        "earnings_date",
+        "nextEarningsDate",
+    ):
         if quote.get(k):
             next_earn = str(quote.get(k))[:10]
             break
@@ -621,9 +698,17 @@ def _evaluate_and_notify(symbol_id: int, ticker: str, quote: Dict[str, Any], now
                 trigger = f"crossed **above {a_val:.2f}**"
             elif a_type == "below" and (price is not None) and price <= a_val:
                 trigger = f"fell **below {a_val:.2f}**"
-            elif a_type == "pct_drop" and (pct_from_open is not None) and pct_from_open <= -abs(a_val):
+            elif (
+                a_type == "pct_drop"
+                and (pct_from_open is not None)
+                and pct_from_open <= -abs(a_val)
+            ):
                 trigger = f"**{abs(a_val):.0f}% drop** from open"
-            elif a_type == "pct_jump" and (pct_from_open is not None) and pct_from_open >= abs(a_val):
+            elif (
+                a_type == "pct_jump"
+                and (pct_from_open is not None)
+                and pct_from_open >= abs(a_val)
+            ):
                 trigger = f"**{abs(a_val):.0f}% jump** from open"
 
             if trigger:
@@ -642,9 +727,17 @@ def _evaluate_and_notify(symbol_id: int, ticker: str, quote: Dict[str, Any], now
 # Bulk Update (Scheduler)
 # =========================
 
+
 def check_alerts() -> None:
     started = int(time.time())
-    set_run_status("running", started=started, status_code=None, message="Updating quotes…", ok_count=0, err_count=0)
+    set_run_status(
+        "running",
+        started=started,
+        status_code=None,
+        message="Updating quotes…",
+        ok_count=0,
+        err_count=0,
+    )
 
     ok_count = 0
     err_count = 0
@@ -655,12 +748,21 @@ def check_alerts() -> None:
         with get_conn() as conn:
             c = conn.cursor()
             # bulk update ONLY pulls from WATCH group (archived excluded)
-            c.execute("SELECT id, ticker FROM symbols WHERE group_id=? ORDER BY ticker", (WATCH_ID,))
+            c.execute(
+                "SELECT id, ticker FROM symbols WHERE group_id=? ORDER BY ticker",
+                (WATCH_ID,),
+            )
             all_symbols = c.fetchall()
 
         if not all_symbols:
-            set_run_status("finished", finished=int(time.time()), status_code="ok",
-                           message="No symbols in watchlist", ok_count=0, err_count=0)
+            set_run_status(
+                "finished",
+                finished=int(time.time()),
+                status_code="ok",
+                message="No symbols in watchlist",
+                ok_count=0,
+                err_count=0,
+            )
             return
 
         et_now = now_et()
@@ -679,11 +781,17 @@ def check_alerts() -> None:
                 if err == "rate_limited":
                     rate_limited_seen = True
                 err_count += 1
-                upsert_symbol_state_full(symbol_id, window_ok, f"{prefix} | {err}", data=None)
+                upsert_symbol_state_full(
+                    symbol_id, window_ok, f"{prefix} | {err}", data=None
+                )
             else:
                 ok_count += 1
-                upsert_symbol_state_full(symbol_id, window_ok, f"{prefix} | Price check ok", data=full)
-                total_notified += _evaluate_and_notify(symbol_id, ticker, full, int(time.time()))
+                upsert_symbol_state_full(
+                    symbol_id, window_ok, f"{prefix} | Price check ok", data=full
+                )
+                total_notified += _evaluate_and_notify(
+                    symbol_id, ticker, full, int(time.time())
+                )
 
     except Exception as e:
         log.exception(f"check_alerts fatal error: {e}")
@@ -695,8 +803,14 @@ def check_alerts() -> None:
         elif err_count:
             status_code = "partial"
         msg = f"Updated {ok_count} symbol(s), {err_count} error(s); notified {total_notified}"
-        set_run_status("finished", finished=finished, status_code=status_code, message=msg,
-                       ok_count=ok_count, err_count=err_count)
+        set_run_status(
+            "finished",
+            finished=finished,
+            status_code=status_code,
+            message=msg,
+            ok_count=ok_count,
+            err_count=err_count,
+        )
 
 
 def _parse_fire_time(hhmm: str) -> Tuple[int, int]:
@@ -743,7 +857,13 @@ def root():
 
 def _row_to_symbol(row: Tuple[Any, ...]) -> Dict[str, Any]:
     # SELECT id, ticker, note, rating, last_edit_epoch
-    return {"id": row[0], "ticker": row[1], "note": row[2], "rating": row[3], "last_edit_epoch": row[4]}
+    return {
+        "id": row[0],
+        "ticker": row[1],
+        "note": row[2],
+        "rating": row[3],
+        "last_edit_epoch": row[4],
+    }
 
 
 @app.get("/api/health")
@@ -753,7 +873,9 @@ def health():
         "ok": True,
         "provider": QUOTE_PROVIDER_NAME,
         "provider_ready": PROVIDER.is_ready(),
-        "alpha_key_present": bool(os.getenv("ALPHA_VANTAGE_KEY")),  # backward-compat status hint
+        "alpha_key_present": bool(
+            os.getenv("ALPHA_VANTAGE_KEY")
+        ),  # backward-compat status hint
         "market_tz": MARKET_TZ,
         "cooldown_minutes": COOLDOWN_MINUTES,
     }
@@ -763,20 +885,32 @@ def health():
 def symbols_by_group():
     with get_conn() as conn:
         c = conn.cursor()
-        c.execute("SELECT id, ticker, note, rating, last_edit_epoch FROM symbols WHERE group_id=? ORDER BY ticker", (WATCH_ID,))
+        c.execute(
+            "SELECT id, ticker, note, rating, last_edit_epoch FROM symbols WHERE group_id=? ORDER BY ticker",
+            (WATCH_ID,),
+        )
         watch = [_row_to_symbol(r) for r in c.fetchall()]
-        c.execute("SELECT id, ticker, note, rating, last_edit_epoch FROM symbols WHERE group_id=? ORDER BY ticker", (ARCHIVE_ID,))
+        c.execute(
+            "SELECT id, ticker, note, rating, last_edit_epoch FROM symbols WHERE group_id=? ORDER BY ticker",
+            (ARCHIVE_ID,),
+        )
         archived = [_row_to_symbol(r) for r in c.fetchall()]
     return {"watch": watch, "archived": archived}
 
 
 @app.get("/api/symbols")
-def list_symbols(q: Optional[str] = None, scope: Optional[str] = "watch", min_rating: int = 0):
+def list_symbols(
+    q: Optional[str] = None, scope: Optional[str] = "watch", min_rating: int = 0
+):
     """
     scope: 'watch' | 'archived' | 'all'
     """
     scope = (scope or "watch").lower()
-    groups = {"watch": [WATCH_ID], "archived": [ARCHIVE_ID], "all": [WATCH_ID, ARCHIVE_ID]}.get(scope, [WATCH_ID])
+    groups = {
+        "watch": [WATCH_ID],
+        "archived": [ARCHIVE_ID],
+        "all": [WATCH_ID, ARCHIVE_ID],
+    }.get(scope, [WATCH_ID])
 
     query = f"SELECT id, ticker, note, rating, last_edit_epoch FROM symbols WHERE group_id IN ({','.join('?'*len(groups))})"
     params: list[Any] = list(groups)
@@ -814,7 +948,10 @@ async def add_symbol(request: Request):
 
         # Seed default earnings reminder if configured
         try:
-            if isinstance(EARNINGS_NOTIFY_DEFAULT_DAYS, int) and EARNINGS_NOTIFY_DEFAULT_DAYS >= 0:
+            if (
+                isinstance(EARNINGS_NOTIFY_DEFAULT_DAYS, int)
+                and EARNINGS_NOTIFY_DEFAULT_DAYS >= 0
+            ):
                 c.execute(
                     "INSERT INTO alerts (symbol_id, type, value) VALUES (?, ?, ?)",
                     (symbol_id, "earnings_days", int(EARNINGS_NOTIFY_DEFAULT_DAYS)),
@@ -848,7 +985,10 @@ async def update_note(symbol_id: int, request: Request):
     now_epoch = int(time.time())
     with get_conn() as conn:
         c = conn.cursor()
-        c.execute("UPDATE symbols SET note=?, last_edit_epoch=? WHERE id=?", (note, now_epoch, symbol_id))
+        c.execute(
+            "UPDATE symbols SET note=?, last_edit_epoch=? WHERE id=?",
+            (note, now_epoch, symbol_id),
+        )
         conn.commit()
     return {"status": "saved", "last_edit_epoch": now_epoch}
 
@@ -893,24 +1033,46 @@ async def save_alerts(symbol_id: int, request: Request):
         c.execute("DELETE FROM alerts WHERE symbol_id=?", (symbol_id,))
 
         if isinstance(above, (int, float)):
-            c.execute("INSERT INTO alerts (symbol_id, type, value) VALUES (?, ?, ?)", (symbol_id, "above", float(above)))
+            c.execute(
+                "INSERT INTO alerts (symbol_id, type, value) VALUES (?, ?, ?)",
+                (symbol_id, "above", float(above)),
+            )
         if isinstance(below, (int, float)):
-            c.execute("INSERT INTO alerts (symbol_id, type, value) VALUES (?, ?, ?)", (symbol_id, "below", float(below)))
+            c.execute(
+                "INSERT INTO alerts (symbol_id, type, value) VALUES (?, ?, ?)",
+                (symbol_id, "below", float(below)),
+            )
         for p in pct_drop:
-            c.execute("INSERT INTO alerts (symbol_id, type, value) VALUES (?, ?, ?)", (symbol_id, "pct_drop", float(p)))
+            c.execute(
+                "INSERT INTO alerts (symbol_id, type, value) VALUES (?, ?, ?)",
+                (symbol_id, "pct_drop", float(p)),
+            )
         for p in pct_jump:
-            c.execute("INSERT INTO alerts (symbol_id, type, value) VALUES (?, ?, ?)", (symbol_id, "pct_jump", float(p)))
+            c.execute(
+                "INSERT INTO alerts (symbol_id, type, value) VALUES (?, ?, ?)",
+                (symbol_id, "pct_jump", float(p)),
+            )
 
         if isinstance(earn_days, (int, float)):
-            c.execute("INSERT INTO alerts (symbol_id, type, value) VALUES (?, ?, ?)", (symbol_id, "earnings_days", int(earn_days)))
+            c.execute(
+                "INSERT INTO alerts (symbol_id, type, value) VALUES (?, ?, ?)",
+                (symbol_id, "earnings_days", int(earn_days)),
+            )
         else:
-            if isinstance(EARNINGS_NOTIFY_DEFAULT_DAYS, int) and EARNINGS_NOTIFY_DEFAULT_DAYS >= 0:
-                c.execute("INSERT INTO alerts (symbol_id, type, value) VALUES (?, ?, ?)",
-                          (symbol_id, "earnings_days", int(EARNINGS_NOTIFY_DEFAULT_DAYS)))
+            if (
+                isinstance(EARNINGS_NOTIFY_DEFAULT_DAYS, int)
+                and EARNINGS_NOTIFY_DEFAULT_DAYS >= 0
+            ):
+                c.execute(
+                    "INSERT INTO alerts (symbol_id, type, value) VALUES (?, ?, ?)",
+                    (symbol_id, "earnings_days", int(EARNINGS_NOTIFY_DEFAULT_DAYS)),
+                )
 
         # stamp last edit time when alert settings change
         now_epoch = int(time.time())
-        c.execute("UPDATE symbols SET last_edit_epoch=? WHERE id=?", (now_epoch, symbol_id))
+        c.execute(
+            "UPDATE symbols SET last_edit_epoch=? WHERE id=?", (now_epoch, symbol_id)
+        )
         conn.commit()
 
     return {"status": "saved", "last_edit_epoch": now_epoch}
@@ -924,7 +1086,10 @@ def get_quote(symbol_id: int):
         c.execute("SELECT ticker FROM symbols WHERE id=?", (symbol_id,))
         r = c.fetchone()
         if not r:
-            return JSONResponse({"error": "not_found", "error_detail": "Symbol not found"}, status_code=404)
+            return JSONResponse(
+                {"error": "not_found", "error_detail": "Symbol not found"},
+                status_code=404,
+            )
         ticker = r[0]
 
         # pull cached row (scheduler writes)
@@ -952,25 +1117,54 @@ def get_quote(symbol_id: int):
     }
 
     if not st:
-        payload.update({
-            "last_check_epoch": None,
-            "last_check_note": None,
-            "window_open": None,
-            "price": None, "prev_close": None,
-            "open": None, "high": None, "low": None, "volume": None, "latest_trading_day": None,
-            "change": None, "change_percent": None,
-            "market_cap": None, "pe_ratio": None, "dividend_yield_percent": None,
-            "fifty_two_week_high": None, "fifty_two_week_low": None, "quarterly_dividend_amount": None,
-            "description": None,
-            "next_earning_day": None,
-        })
+        payload.update(
+            {
+                "last_check_epoch": None,
+                "last_check_note": None,
+                "window_open": None,
+                "price": None,
+                "prev_close": None,
+                "open": None,
+                "high": None,
+                "low": None,
+                "volume": None,
+                "latest_trading_day": None,
+                "change": None,
+                "change_percent": None,
+                "market_cap": None,
+                "pe_ratio": None,
+                "dividend_yield_percent": None,
+                "fifty_two_week_high": None,
+                "fifty_two_week_low": None,
+                "quarterly_dividend_amount": None,
+                "description": None,
+                "next_earning_day": None,
+            }
+        )
         return payload
 
-    (last_check_epoch, last_check_note, window_open,
-     price, prev_close, open_, high, low, volume, ltd,
-     change, change_pct,
-     mcap, pe, div_yld,
-     wk52h, wk52l, qdiv, description, next_earning_day) = st
+    (
+        last_check_epoch,
+        last_check_note,
+        window_open,
+        price,
+        prev_close,
+        open_,
+        high,
+        low,
+        volume,
+        ltd,
+        change,
+        change_pct,
+        mcap,
+        pe,
+        div_yld,
+        wk52h,
+        wk52l,
+        qdiv,
+        description,
+        next_earning_day,
+    ) = st
 
     # derive change fields if scheduler left them null
     if change is None and price is not None and prev_close is not None:
@@ -978,21 +1172,30 @@ def get_quote(symbol_id: int):
     if change_pct is None and change is not None and prev_close not in (None, 0):
         change_pct = f"{(change / prev_close) * 100:.2f}%"
 
-    payload.update({
-        "last_check_epoch": last_check_epoch,
-        "last_check_note": last_check_note,
-        "window_open": bool(window_open) if window_open is not None else None,
-
-        "price": price, "prev_close": prev_close,
-        "open": open_, "high": high, "low": low, "volume": volume, "latest_trading_day": ltd,
-
-        "change": change, "change_percent": change_pct,
-
-        "market_cap": mcap, "pe_ratio": pe, "dividend_yield_percent": div_yld,
-        "fifty_two_week_high": wk52h, "fifty_two_week_low": wk52l, "quarterly_dividend_amount": qdiv,
-        "description": description,
-        "next_earning_day": next_earning_day,
-    })
+    payload.update(
+        {
+            "last_check_epoch": last_check_epoch,
+            "last_check_note": last_check_note,
+            "window_open": bool(window_open) if window_open is not None else None,
+            "price": price,
+            "prev_close": prev_close,
+            "open": open_,
+            "high": high,
+            "low": low,
+            "volume": volume,
+            "latest_trading_day": ltd,
+            "change": change,
+            "change_percent": change_pct,
+            "market_cap": mcap,
+            "pe_ratio": pe,
+            "dividend_yield_percent": div_yld,
+            "fifty_two_week_high": wk52h,
+            "fifty_two_week_low": wk52l,
+            "quarterly_dividend_amount": qdiv,
+            "description": description,
+            "next_earning_day": next_earning_day,
+        }
+    )
     return payload
 
 
@@ -1025,14 +1228,21 @@ def last_update():
         return {"epoch": None, "text": "—", "timezone": MARKET_TZ}
 
     dt = datetime.fromtimestamp(epoch, ZoneInfo(MARKET_TZ))
-    return {"epoch": epoch, "text": dt.strftime("%Y-%m-%d %H:%M:%S %Z"), "timezone": MARKET_TZ}
+    return {
+        "epoch": epoch,
+        "text": dt.strftime("%Y-%m-%d %H:%M:%S %Z"),
+        "timezone": MARKET_TZ,
+    }
 
 
 @app.delete("/api/symbols/{symbol_id}")
 def delete_symbol(symbol_id: int):
     with get_conn() as conn:
         c = conn.cursor()
-        c.execute("DELETE FROM alert_state WHERE alert_id IN (SELECT id FROM alerts WHERE symbol_id=?)", (symbol_id,))
+        c.execute(
+            "DELETE FROM alert_state WHERE alert_id IN (SELECT id FROM alerts WHERE symbol_id=?)",
+            (symbol_id,),
+        )
         c.execute("DELETE FROM alerts WHERE symbol_id=?", (symbol_id,))
         c.execute("DELETE FROM symbol_state WHERE symbol_id=?", (symbol_id,))
         c.execute("DELETE FROM symbols WHERE id=?", (symbol_id,))
@@ -1060,7 +1270,9 @@ def get_symbol(symbol_id: int):
         )
         row = c.fetchone()
     if not row:
-        return JSONResponse({"error": "not_found", "error_detail": "Symbol not found"}, status_code=404)
+        return JSONResponse(
+            {"error": "not_found", "error_detail": "Symbol not found"}, status_code=404
+        )
     return {
         "id": row[0],
         "ticker": row[1],
@@ -1080,7 +1292,9 @@ def api_run_status():
     def _fmt(epoch: Optional[int]) -> Optional[str]:
         if not epoch:
             return None
-        return datetime.fromtimestamp(epoch, ZoneInfo(MARKET_TZ)).strftime("%Y-%m-%d %H:%M:%S %Z")
+        return datetime.fromtimestamp(epoch, ZoneInfo(MARKET_TZ)).strftime(
+            "%Y-%m-%d %H:%M:%S %Z"
+        )
 
     st["started_text"] = _fmt(st.get("started_epoch"))
     st["finished_text"] = _fmt(st.get("finished_epoch"))
@@ -1088,6 +1302,7 @@ def api_run_status():
 
 
 # ========== On-demand update endpoints ==========
+
 
 @app.post("/api/update_symbol/{symbol_id}")
 def api_update_symbol(symbol_id: int):
@@ -1115,11 +1330,15 @@ def api_update_symbol(symbol_id: int):
 
     err = (full or {}).get("error")
     if err:
-        upsert_symbol_state_full(symbol_id, window_ok, f"{note_prefix} | {err}", data=None)
+        upsert_symbol_state_full(
+            symbol_id, window_ok, f"{note_prefix} | {err}", data=None
+        )
         return {"status": "error", "error": err}
 
     # Persist state
-    upsert_symbol_state_full(symbol_id, window_ok, f"{note_prefix} | Price check ok", data=full)
+    upsert_symbol_state_full(
+        symbol_id, window_ok, f"{note_prefix} | Price check ok", data=full
+    )
 
     # Evaluate alerts immediately for this symbol
     notified = _evaluate_and_notify(symbol_id, ticker, full, int(time.time()))
@@ -1138,7 +1357,9 @@ def api_update_all():
         return {"status": "started"}
     except Exception as e:
         log.error(f"Failed to start bulk update: {e}")
-        return JSONResponse({"status": "error", "error": "start_failed"}, status_code=500)
+        return JSONResponse(
+            {"status": "error", "error": "start_failed"}, status_code=500
+        )
 
 
 @app.post("/api/run_status/reset")
@@ -1150,6 +1371,7 @@ def api_run_status_reset():
 # =========================
 # Startup Hook
 # =========================
+
 
 @app.on_event("startup")
 def _on_startup_recover():

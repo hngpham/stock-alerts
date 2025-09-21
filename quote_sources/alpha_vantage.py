@@ -7,6 +7,7 @@ from typing import Optional, Tuple, Dict
 
 ALPHA_URL = "https://www.alphavantage.co/query"
 
+
 def _f(x):
     """Coerce to float or None (handles '', None, 'None')."""
     try:
@@ -14,12 +15,14 @@ def _f(x):
     except Exception:
         return None
 
+
 def _i(x):
     """Coerce to int or None via float first (handles '', None, 'None')."""
     try:
         return None if x in (None, "", "None") else int(float(x))
     except Exception:
         return None
+
 
 class AlphaVantageProvider:
     """
@@ -30,6 +33,7 @@ class AlphaVantageProvider:
       - Do not substitute prev_close=price when prev_close is missing.
       - Only derive change / change_percent when both price and prev_close exist.
     """
+
     name = "alpha_vantage"
 
     def __init__(self, api_key: Optional[str], timeout: int = 12):
@@ -44,7 +48,11 @@ class AlphaVantageProvider:
         if not self.api_key:
             return None, "key_missing"
         try:
-            r = requests.get(ALPHA_URL, params={**params, "apikey": self.api_key}, timeout=self.timeout)
+            r = requests.get(
+                ALPHA_URL,
+                params={**params, "apikey": self.api_key},
+                timeout=self.timeout,
+            )
             r.raise_for_status()
             j = r.json()
         except Exception:
@@ -102,7 +110,9 @@ class AlphaVantageProvider:
         return None
 
     # ---- minimal price/prev_close (used by scheduler) ----
-    def get_price_prev_close(self, symbol: str) -> Tuple[Optional[float], Optional[float], Optional[str]]:
+    def get_price_prev_close(
+        self, symbol: str
+    ) -> Tuple[Optional[float], Optional[float], Optional[str]]:
         q, err = self._global_quote(symbol)
         if err or not q:
             return None, None, err
@@ -123,8 +133,11 @@ class AlphaVantageProvider:
 
         core = {
             "symbol": s,
-            "open": None, "high": None, "low": None,
-            "price": None, "volume": None,
+            "open": None,
+            "high": None,
+            "low": None,
+            "price": None,
+            "volume": None,
             "latest_trading_day": None,
             "prev_close": None,
             "change": None,
@@ -149,16 +162,18 @@ class AlphaVantageProvider:
                 price = _f(q.get("05. price"))
                 prev_close = _f(q.get("08. previous close"))
 
-                core.update({
-                    "symbol": q.get("01. symbol", s),
-                    "open": _f(q.get("02. open")),
-                    "high": _f(q.get("03. high")),
-                    "low":  _f(q.get("04. low")),
-                    "price": price,
-                    "volume": _i(q.get("06. volume")),
-                    "latest_trading_day": q.get("07. latest trading day"),
-                    "prev_close": prev_close,
-                })
+                core.update(
+                    {
+                        "symbol": q.get("01. symbol", s),
+                        "open": _f(q.get("02. open")),
+                        "high": _f(q.get("03. high")),
+                        "low": _f(q.get("04. low")),
+                        "price": price,
+                        "volume": _i(q.get("06. volume")),
+                        "latest_trading_day": q.get("07. latest trading day"),
+                        "prev_close": prev_close,
+                    }
+                )
 
                 # Only derive when both exist
                 if price is not None and prev_close is not None and prev_close != 0:
@@ -178,11 +193,15 @@ class AlphaVantageProvider:
                 core["market_cap"] = _i(ov.get("MarketCapitalization"))
                 core["pe_ratio"] = _f(ov.get("PERatio"))
                 dy = _f(ov.get("DividendYield"))  # 0.0273 style
-                core["dividend_yield_percent"] = (dy * 100.0) if dy is not None else None
+                core["dividend_yield_percent"] = (
+                    (dy * 100.0) if dy is not None else None
+                )
                 core["fifty_two_week_high"] = _f(ov.get("52WeekHigh"))
-                core["fifty_two_week_low"]  = _f(ov.get("52WeekLow"))
+                core["fifty_two_week_low"] = _f(ov.get("52WeekLow"))
                 dps = _f(ov.get("DividendPerShare"))
-                core["quarterly_dividend_amount"] = (dps / 4.0) if dps is not None else None
+                core["quarterly_dividend_amount"] = (
+                    (dps / 4.0) if dps is not None else None
+                )
                 core["description"] = self._compose_short_description(ov)
                 # Alpha's free endpoints don't expose a forward earnings date reliably → keep next_earning_day=None
             except Exception:
@@ -190,7 +209,11 @@ class AlphaVantageProvider:
                 pass
 
         # If both price and prev_close are missing and no explicit error set, mark as empty
-        if core["price"] is None and core["prev_close"] is None and core["error"] is None:
+        if (
+            core["price"] is None
+            and core["prev_close"] is None
+            and core["error"] is None
+        ):
             core["error"] = "empty_quote"
 
         return core

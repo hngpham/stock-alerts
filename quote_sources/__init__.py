@@ -12,11 +12,14 @@ from .chatgpt_search_preview_provider import ChatGPTSearchPreviewQuoteProvider
 from .gemini_search_provider import GeminiSearchQuoteProvider
 
 
-def _fallback_provider(primary: QuoteProvider, secondary: QuoteProvider) -> QuoteProvider:
+def _fallback_provider(
+    primary: QuoteProvider, secondary: QuoteProvider
+) -> QuoteProvider:
     """
     Composite provider: try `primary`; if it errors or yields no usable numbers,
     try `secondary`. Keeps each provider's own `source` field.
     """
+
     class FallbackQuoteProvider:
         name = f"{getattr(primary, 'name', 'primary')}_then_{getattr(secondary, 'name', 'secondary')}"
 
@@ -76,7 +79,10 @@ def _fallback_provider(primary: QuoteProvider, secondary: QuoteProvider) -> Quot
                 }
 
             primary_err = (d or {}).get("error")
-            primary_has_data = bool(d and ((d.get("price") is not None) or (d.get("prev_close") is not None)))
+            primary_has_data = bool(
+                d
+                and ((d.get("price") is not None) or (d.get("prev_close") is not None))
+            )
             if not primary_err and primary_has_data:
                 return d
 
@@ -107,7 +113,12 @@ def _fallback_provider(primary: QuoteProvider, secondary: QuoteProvider) -> Quot
                 }
 
             secondary_err = (d2 or {}).get("error")
-            secondary_has_data = bool(d2 and ((d2.get("price") is not None) or (d2.get("prev_close") is not None)))
+            secondary_has_data = bool(
+                d2
+                and (
+                    (d2.get("price") is not None) or (d2.get("prev_close") is not None)
+                )
+            )
 
             if secondary_has_data and not primary_has_data:
                 return d2
@@ -129,23 +140,26 @@ def get_provider() -> QuoteProvider:
     if name in ("gemini", "google", "gemini_search"):
         # Primary: Gemini; Fallback: Alpha Vantage (if configured)
         gemini_p = GeminiSearchQuoteProvider()
-        alpha_s  = AlphaVantageProvider(api_key=os.getenv("ALPHA_VANTAGE_KEY"))
+        alpha_s = AlphaVantageProvider(api_key=os.getenv("ALPHA_VANTAGE_KEY"))
         return _fallback_provider(gemini_p, alpha_s) if alpha_s.is_ready() else gemini_p
 
     if name in ("chatgpt", "openai"):
         # Primary: OpenAI; Fallback: Alpha Vantage (if configured)
         openai_p = ChatGPTSearchPreviewQuoteProvider()
-        alpha_s  = AlphaVantageProvider(api_key=os.getenv("ALPHA_VANTAGE_KEY"))
+        alpha_s = AlphaVantageProvider(api_key=os.getenv("ALPHA_VANTAGE_KEY"))
         return _fallback_provider(openai_p, alpha_s) if alpha_s.is_ready() else openai_p
 
     # Fallback dummy (no scope leak)
     class _Dummy:
         def __init__(self, provider_name: str):
             self.name = provider_name or "unconfigured"
+
         def is_ready(self) -> bool:
             return False
+
         def get_price_prev_close(self, symbol):
             return (None, None, "unconfigured")
+
         def get_full(self, symbol):
             return {
                 "symbol": symbol.upper().strip(),

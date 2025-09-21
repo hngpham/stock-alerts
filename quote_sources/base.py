@@ -6,12 +6,15 @@ from typing import Protocol, Tuple, Optional, Dict
 # "key_missing" | "network_error" | "rate_limited" | "invalid_symbol" |
 # "empty_quote" | "parse_error" | "unconfigured" | "unknown"
 
+
 class QuoteProvider(Protocol):
     name: str
 
     def is_ready(self) -> bool: ...
 
-    def get_price_prev_close(self, symbol: str) -> Tuple[Optional[float], Optional[float], Optional[str]]:
+    def get_price_prev_close(
+        self, symbol: str
+    ) -> Tuple[Optional[float], Optional[float], Optional[str]]:
         """Returns: (price, prev_close, error_code_or_None)"""
 
     def get_full(self, symbol: str) -> Dict:
